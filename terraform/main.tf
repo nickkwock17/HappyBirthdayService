@@ -70,8 +70,8 @@ resource "aws_iam_role_policy" "scheduler_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action = "lambda:InvokeFunction"
-        Effect = "Allow"
+        Action   = "lambda:InvokeFunction"
+        Effect   = "Allow"
         Resource = aws_lambda_function.birthday_checker.arn
       }
     ]
