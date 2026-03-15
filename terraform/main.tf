@@ -43,6 +43,29 @@ resource "aws_lambda_function" "birthday_checker" {
   runtime          = "python3.12"
 }
 
+# 5. EventBridge Rule (Runs at 6:30 AM and 1:30 PM Pacific Time / 13:30 and 20:30 UTC)
+resource "aws_cloudwatch_event_rule" "twice_daily_birthday_check" {
+  name                = "twice-daily-birthday-check"
+  description         = "Triggers birthday check Lambda at 6:30 AM and 1:30 PM Pacific Time"
+  schedule_expression = "cron(30 13,20 * * ? *)"
+}
+
+# 6. EventBridge Target
+resource "aws_cloudwatch_event_target" "lambda_target" {
+  rule      = aws_cloudwatch_event_rule.twice_daily_birthday_check.name
+  target_id = "BirthdayCheckLambda"
+  arn       = aws_lambda_function.birthday_checker.arn
+}
+
+# 7. Lambda Permission (Allow EventBridge to invoke Lambda)
+resource "aws_lambda_permission" "allow_eventbridge" {
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.birthday_checker.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.twice_daily_birthday_check.arn
+}
+
 output "lambda_arn" {
   value = aws_lambda_function.birthday_checker.arn
 }
