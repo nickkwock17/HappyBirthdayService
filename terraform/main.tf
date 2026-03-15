@@ -43,27 +43,57 @@ resource "aws_lambda_function" "birthday_checker" {
   runtime          = "python3.12"
 }
 
-# 5. EventBridge Rule (Runs at 6:30 AM and 1:30 PM Pacific Time / 13:30 and 20:30 UTC)
-resource "aws_cloudwatch_event_rule" "twice_daily_birthday_check" {
-  name                = "twice-daily-birthday-check"
-  description         = "Triggers birthday check Lambda at 6:30 AM and 1:30 PM Pacific Time"
-  schedule_expression = "cron(30 13,20 * * ? *)"
+# 5. IAM Role for EventBridge Scheduler
+resource "aws_iam_role" "scheduler_role" {
+  name = "birthday_checker_scheduler_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "scheduler.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
-# 6. EventBridge Target
-resource "aws_cloudwatch_event_target" "lambda_target" {
-  rule      = aws_cloudwatch_event_rule.twice_daily_birthday_check.name
-  target_id = "BirthdayCheckLambda"
-  arn       = aws_lambda_function.birthday_checker.arn
+# 6. Policy to allow Scheduler to invoke Lambda
+resource "aws_iam_role_policy" "scheduler_policy" {
+  name = "birthday_checker_scheduler_policy"
+  role = aws_iam_role.scheduler_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "lambda:InvokeFunction"
+        Effect = "Allow"
+        Resource = aws_lambda_function.birthday_checker.arn
+      }
+    ]
+  })
 }
 
-# 7. Lambda Permission (Allow EventBridge to invoke Lambda)
-resource "aws_lambda_permission" "allow_eventbridge" {
-  statement_id  = "AllowExecutionFromEventBridge"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.birthday_checker.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.twice_daily_birthday_check.arn
+# 7. EventBridge Scheduler Schedule (Native Pacific Time support)
+resource "aws_scheduler_schedule" "birthday_check_schedule" {
+  name       = "birthday-check-schedule"
+  group_name = "default"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression          = "cron(0 6,14 * * ? *)"
+  schedule_expression_timezone = "America/Los_Angeles"
+
+  target {
+    arn      = aws_lambda_function.birthday_checker.arn
+    role_arn = aws_iam_role.scheduler_role.arn
+  }
 }
 
 output "lambda_arn" {
