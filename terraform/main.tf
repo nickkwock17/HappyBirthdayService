@@ -1,3 +1,9 @@
+variable "environment" {
+  description = "The deployment environment (e.g., 'local', 'prod')."
+  type        = string
+  default     = "local"
+}
+
 provider "aws" {
   region = "us-west-2"
 }
@@ -5,7 +11,7 @@ provider "aws" {
 # 1. Archive the Lambda function code
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/../lambda/index.py"
+  source_dir  = "${path.module}/../lambda/"
   output_path = "${path.module}/lambda_function_payload.zip"
 }
 
@@ -41,6 +47,12 @@ resource "aws_lambda_function" "birthday_checker" {
   role             = aws_iam_role.lambda_exec_role.arn
   handler          = "index.handler"
   runtime          = "python3.12"
+
+  environment {
+    variables = {
+      ENV = var.environment
+    }
+  }
 }
 
 # 5. IAM Role for EventBridge Scheduler
