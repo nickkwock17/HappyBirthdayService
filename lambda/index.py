@@ -7,7 +7,7 @@ from email_generator import generate_emails
 def handler(event, context):
     print("Checking for upcoming birthdays...")
 
-    env = os.getenv("environment")
+    env = os.getenv("ENV")
     print(f"Running in environment: {env}")
 
     birthdays = get_all_birthday_rows_from_database(env)
