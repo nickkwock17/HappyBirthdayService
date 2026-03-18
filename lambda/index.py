@@ -1,4 +1,9 @@
 import os
+import sys
+
+# Add local dependencies folder to path
+sys.path.append(os.path.join(os.path.dirname(__file__), "dependencies"))
+
 from email_service import send_emails
 from db import get_all_birthday_rows_from_database
 from email_generator import generate_emails

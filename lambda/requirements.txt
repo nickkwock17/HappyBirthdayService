@@ -1,3 +1,2 @@
 gspread
 google-auth
-boto3

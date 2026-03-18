@@ -7,10 +7,10 @@ from typing import List
 from birthday_schema import BirthdaySchema
 from google.oauth2.service_account import Credentials
 
-def get_secret(secret_name: str):
+def get_secret(secretsmanager_sheet_secret_name: str):
     """Retrieves the secret from AWS Secrets Manager."""
     client = boto3.client("secretsmanager")
-    response = client.get_secret_value(SecretId=secret_name)
+    response = client.get_secret_value(SecretId=secretsmanager_sheet_secret_name)
     return json.loads(response["SecretString"])
 
 def get_all_birthday_rows_from_database(env: str) -> List[BirthdaySchema]:
@@ -27,31 +27,43 @@ def get_all_birthday_rows_from_database(env: str) -> List[BirthdaySchema]:
 def retrieve_rows_from_google_sheets() -> List[BirthdaySchema]:
     print("Fetching data from Google Sheets...")
     
-    secret_name = os.getenv("GOOGLE_SHEETS_SECRET_NAME")
+    secretsmanager_sheet_secret_name = os.getenv("GOOGLE_SHEETS_SECRET_NAME")
     sheet_id = os.getenv("GOOGLE_SHEET_ID")
     
-    if not secret_name or not sheet_id:
+    if not secretsmanager_sheet_secret_name or not sheet_id:
         print("Error: GOOGLE_SHEETS_SECRET_NAME or GOOGLE_SHEET_ID not set.")
         return []
 
+    # 1. Get credentials from Secrets Manager
     try:
-        # 1. Get credentials from Secrets Manager
-        creds_json = get_secret(secret_name)
-        
-        # 2. Authenticate with Google
+        creds_json = get_secret(secretsmanager_sheet_secret_name)
+    except Exception as e:
+        print(f"Error retrieving secrets from Secrets Manager: {e}")
+        return []
+
+    # 2. Authenticate with Google
+    try:
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
         creds = Credentials.from_service_account_info(creds_json, scopes=scopes)
         gc = gspread.authorize(creds)
-        
-        # 3. Open the sheet and get all records
+    except Exception as e:
+        print(f"Error authenticating with Google APIs: {e}")
+        return []
+
+    # 3. Open the sheet and get all records
+    try:
         sheet = gc.open_by_key(sheet_id).sheet1
         rows = sheet.get_all_records()
-        
-        # 4. Map rows to BirthdaySchema
-        birthdays = []
+    except Exception as e:
+        print(f"Error accessing Google Sheet or fetching records: {e}")
+        return []
+
+    # 4. Map rows to BirthdaySchema
+    birthdays = []
+    try:
         for row in rows:
             # Assumes column names: Name, Email, BirthDate, FriendsWith, RemindInDays
             # Date format assumed to be YYYY-MM-DD
@@ -68,12 +80,11 @@ def retrieve_rows_from_google_sheets() -> List[BirthdaySchema]:
                 friends_with=row.get("FriendsWith"),
                 remind_in_days=int(row.get("RemindInDays")) if row.get("RemindInDays") else None
             ))
-        
+    except Exception as e:
+        print(f"Error parsing data from Google Sheet: {e}")
         return birthdays
 
-    except Exception as e:
-        print(f"Error retrieving rows from Google Sheets: {e}")
-        return []
+    return birthdays
 
 def generate_test_rows():
     print("Running in 'local' environment, returning mock data.")
