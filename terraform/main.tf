@@ -4,6 +4,12 @@ variable "environment" {
   default     = "local"
 }
 
+variable "google_sheet_id" {
+  description = "The ID of the Google Sheet containing birthday data."
+  type        = string
+  default     = "REPLACE_WITH_YOUR_SHEET_ID"
+}
+
 provider "aws" {
   region = "us-west-2"
 }
@@ -39,6 +45,29 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# 3a. Attach policy for Secrets Manager access
+resource "aws_iam_role_policy" "lambda_secrets" {
+  name = "birthday_checker_lambda_secrets_policy"
+  role = aws_iam_role.lambda_exec_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "secretsmanager:GetSecretValue"
+        Effect   = "Allow"
+        Resource = aws_secretsmanager_secret.google_sheets_creds.arn
+      }
+    ]
+  })
+}
+
+# 3b. Secrets Manager Secret
+resource "aws_secretsmanager_secret" "google_sheets_creds" {
+  name        = "google_sheets_credentials"
+  description = "Google Service Account JSON credentials for birthday sheet"
+}
+
 # 4. Lambda Function
 resource "aws_lambda_function" "birthday_checker" {
   filename         = data.archive_file.lambda_zip.output_path
@@ -50,7 +79,9 @@ resource "aws_lambda_function" "birthday_checker" {
 
   environment {
     variables = {
-      ENV = var.environment
+      ENV                       = var.environment
+      GOOGLE_SHEETS_SECRET_NAME = aws_secretsmanager_secret.google_sheets_creds.name
+      GOOGLE_SHEET_ID           = var.google_sheet_id
     }
   }
 }

@@ -33,6 +33,10 @@ jobs:
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
 
+    - name: Install Python dependencies
+      run: |
+        pip install -r ../lambda/requirements.txt -t ../lambda/
+
     - name: Terraform Init
       run: terraform init
 
