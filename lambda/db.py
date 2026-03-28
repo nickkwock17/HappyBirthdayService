@@ -66,12 +66,13 @@ def retrieve_rows_from_google_sheets() -> List[BirthdaySchema]:
     birthdays = []
     try:
         for row in rows:
-            # Assumes column names: Name, Email, BirthDate, FriendsWith, RemindInDays
+            # Assumes column names: Name, Email, BirthDate, FriendsWith, RemindInDays, IsIntegrationTest
             # Date format assumed to be YYYY-MM-DD
             birth_date_str = row.get("BirthDate")
             if birth_date_str:
                 birth_date = datetime.strptime(str(birth_date_str), "%Y-%m-%d").date()
             else:
+                print("Unexpected brith_date_str, row:", row)
                 continue
 
             birthdays.append(BirthdaySchema(
@@ -79,7 +80,8 @@ def retrieve_rows_from_google_sheets() -> List[BirthdaySchema]:
                 email=row.get("Email"),
                 birth_date=birth_date,
                 friends_with=row.get("FriendsWith"),
-                remind_in_days=int(row.get("RemindInDays")) if row.get("RemindInDays") else None
+                remind_in_days=int(row.get("RemindInDays")) if row.get("RemindInDays") else None,
+                is_integration_test= True if str(row.get("IsIntegrationTest")).upper() == "TRUE" else False
             ))
     except Exception as e:
         print(f"Error parsing data from Google Sheet: {e}")

@@ -9,4 +9,5 @@ class BirthdaySchema:
     birth_date: date
     friends_with: str
     remind_in_days: Optional[int] = None
+    is_integration_test: Optional[bool]  = False
 
