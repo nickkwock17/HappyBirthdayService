@@ -81,6 +81,7 @@ resource "aws_lambda_function" "birthday_checker" {
   role             = aws_iam_role.lambda_exec_role.arn
   handler          = "index.handler"
   runtime          = "python3.12"
+  timeout          = 30
 
   environment {
     variables = {
