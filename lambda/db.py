@@ -60,6 +60,7 @@ def retrieve_rows_from_google_sheets() -> List[BirthdaySchema]:
     except Exception as e:
         print(f"Error accessing Google Sheet or fetching records: {e}")
         return []
+    print("Retreived rows:", rows)
 
     # 4. Map rows to BirthdaySchema
     birthdays = []
