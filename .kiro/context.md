@@ -15,7 +15,7 @@ EventBridge Scheduler (6am PT daily)
   → Lambda (birthday-checker, Python 3.12)
       → AWS Secrets Manager (Google Sheets service account creds)
       → Google Sheets API (birthday data source)
-      → Email sending (TODO: not yet implemented for prod)
+      → Email sending (VIA SMTP)
 ```
 
 ## Key Files
