@@ -11,7 +11,7 @@ Automated birthday email reminder service. Written by Nick and Havish.
 ## Architecture
 
 ```
-EventBridge Scheduler (6am + 2pm PT daily)
+EventBridge Scheduler (6am PT daily)
   → Lambda (birthday-checker, Python 3.12)
       → AWS Secrets Manager (Google Sheets service account creds)
       → Google Sheets API (birthday data source)
