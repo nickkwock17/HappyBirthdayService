@@ -16,6 +16,12 @@ variable "google_sheets_secret_name" {
   default     = "google_sheets_credentials"
 }
 
+variable "smtp_secret_name" {
+  description = "The name of the existing Secrets Manager secret containing SMTP credentials (keys: email, password)."
+  type        = string
+  default     = "smtp_credentials"
+}
+
 provider "aws" {
   region = "us-west-2"
 }
@@ -60,9 +66,12 @@ resource "aws_iam_role_policy" "lambda_secrets" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action   = "secretsmanager:GetSecretValue"
-        Effect   = "Allow"
-        Resource = data.aws_secretsmanager_secret.google_sheets_creds.arn
+        Action = "secretsmanager:GetSecretValue"
+        Effect = "Allow"
+        Resource = [
+          data.aws_secretsmanager_secret.google_sheets_creds.arn,
+          data.aws_secretsmanager_secret.smtp_creds.arn
+        ]
       }
     ]
   })
@@ -71,6 +80,11 @@ resource "aws_iam_role_policy" "lambda_secrets" {
 # 3b. Reference existing Secrets Manager Secret
 data "aws_secretsmanager_secret" "google_sheets_creds" {
   name = var.google_sheets_secret_name
+}
+
+# 3c. Reference existing SMTP Secrets Manager Secret
+data "aws_secretsmanager_secret" "smtp_creds" {
+  name = var.smtp_secret_name
 }
 
 # 4. Lambda Function
@@ -88,6 +102,7 @@ resource "aws_lambda_function" "birthday_checker" {
       ENV                       = var.environment
       GOOGLE_SHEETS_SECRET_NAME = var.google_sheets_secret_name
       GOOGLE_SHEET_ID           = var.google_sheet_id
+      SMTP_SECRET_NAME          = var.smtp_secret_name
     }
   }
 }
@@ -136,7 +151,7 @@ resource "aws_scheduler_schedule" "birthday_check_schedule" {
     mode = "OFF"
   }
 
-  schedule_expression          = "cron(0 6,14 * * ? *)"
+  schedule_expression          = "cron(0 6 * * ? *)"
   schedule_expression_timezone = "America/Los_Angeles"
 
   target {
