@@ -72,7 +72,7 @@ def retrieve_rows_from_google_sheets() -> List[BirthdaySchema]:
             if birth_date_str:
                 birth_date = datetime.strptime(str(birth_date_str), "%Y-%m-%d").date()
             else:
-                print("Unexpected brith_date_str, row:", row)
+                print("Unexpected birth_date_str, row:", row)
                 continue
 
             birthdays.append(BirthdaySchema(

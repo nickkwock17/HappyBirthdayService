@@ -7,8 +7,7 @@ def generate_emails(birthdays: List[BirthdaySchema]) -> List[Email]:
     emails = []
 
     for birthday in birthdays:
-        if birthday.birth_date == today or birthday.is_integration_test:
-            emails.append(Email(
+        if (birthday.birth_date.month == today.month and birthday.birth_date.day == today.day) or birthday.is_integration_test:            emails.append(Email(
                 to=birthday.email,
                 subject=f"Happy Birthday, {birthday.name}!",
                 body=(
