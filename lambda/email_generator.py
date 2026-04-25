@@ -13,7 +13,7 @@ def generate_emails(birthdays: List[BirthdaySchema]) -> List[Email]:
                 body=(
                     f"Dear {birthday.name}!\n\n"
                     f"Happy Birthday! We hope you have a wonderful day.\n\n"
-                    f"Best regards,\nYour friends Havish and Nick "
+                    f"Best regards,\nYour friend {birthday.friends_with}"
                 )
             ))
 
